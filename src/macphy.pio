@@ -7,27 +7,30 @@
 .program macphy
 .side_set 1 opt pindirs
 
-nix:
-wait 0 pin, 0
-set x, 7
-rec:
-set pindirs, 1
-in pins, 1
-set pindirs, 0
-jmp x--, rec
+restart:
+  set    pins, 1         side 0     // set clock high and data to input
+  wait   0 pin, 0                   // wait for data being pulled low
 
-jmp    !osre, go 
-jmp nix
+receive:
+  set    x, 7                       // number of bits to read in
 
-go:
-set x, 7 side 1
-sed:
-set pindirs, 1
-out pins, 1
-set pindirs, 0
-jmp x--, sed
-nop side 0
+receiveloop:
+  set    pins, 0                    // set clock low
+  in     pins, 1                    // read in data
+  set    pins, 1                    // set clock high
+  jmp    x--, receiveloop           // loop until x = 0
 
+  jmp    !osre, send                // see if we have data to send
+  jmp    restart                    // no data to send, restart
+
+send:                               // number of bits to write out
+  set    x, 7            side 1     // and set data to output
+
+sendloop:
+  set    pins, 0                    // set clock low
+  out    pins, 1                    // write out data
+  set    pins, 1                    // set clock high
+  jmp    x--, sendloop              // loop until x = 0
 
 % c-sdk {
   void macphy_program_init(PIO pio, uint sm, uint offset, uint dat) {
@@ -47,6 +50,7 @@ nop side 0
     sm_config_set_in_shift(&c, false, true, 8);
     
     pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_consecutive_pindirs(pio, sm, dat, 2, true);
     pio_sm_set_enabled(pio, sm, true);
   }
 %}

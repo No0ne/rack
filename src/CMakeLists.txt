@@ -27,6 +27,8 @@ pico_sdk_init()
 
 add_executable(rack rack.c )
 
+pico_generate_pio_header(rack ${CMAKE_CURRENT_LIST_DIR}/macphy.pio)
+
 pico_set_program_name(rack "rack")
 pico_set_program_version(rack "0.1")
 
