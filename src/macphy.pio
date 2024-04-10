@@ -1,0 +1,52 @@
+;
+; Copyright (c) 2024 No0ne (https://github.com/No0ne)
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program macphy
+.side_set 1 opt pindirs
+
+nix:
+wait 0 pin, 0
+set x, 7
+rec:
+set pindirs, 1
+in pins, 1
+set pindirs, 0
+jmp x--, rec
+
+jmp    !osre, go 
+jmp nix
+
+go:
+set x, 7 side 1
+sed:
+set pindirs, 1
+out pins, 1
+set pindirs, 0
+jmp x--, sed
+nop side 0
+
+
+% c-sdk {
+  void macphy_program_init(PIO pio, uint sm, uint offset, uint dat) {
+    pio_sm_config c = macphy_program_get_default_config(offset);
+    
+    u8 clk = dat + 1;
+    pio_gpio_init(pio, clk);
+    pio_gpio_init(pio, dat);
+    
+    sm_config_set_clkdiv(&c, 15360);
+    sm_config_set_jmp_pin(&c, clk);
+    sm_config_set_set_pins(&c, clk, 1);
+    sm_config_set_sideset_pins(&c, dat);
+    sm_config_set_out_pins(&c, dat, 1);
+    sm_config_set_out_shift(&c, false, true, 8);
+    sm_config_set_in_pins(&c, dat);
+    sm_config_set_in_shift(&c, false, true, 8);
+    
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+  }
+%}
