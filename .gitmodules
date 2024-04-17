@@ -1,0 +1,3 @@
+[submodule "src/ps2x2pico"]
+	path = src/ps2x2pico
+	url = https://github.com/No0ne/ps2x2pico.git
